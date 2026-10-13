@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GroupConnect – Prototype</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --primary:#4F46E5;--primary-dark:#3730A3;--primary-light:#818CF8;
+    --bg:#F8FAFC;--surface:#fff;--border:#E2E8F0;
+    --text:#0F172A;--text2:#64748B;--text3:#94A3B8;
+    --green:#10B981;--red:#EF4444;--yellow:#F59E0B;
+  }
+  body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden}
+  button{cursor:pointer;font-family:inherit;border:none;outline:none}
+  input,textarea{font-family:inherit;outline:none;border:none}
+
+  /* ── AUTH SCREENS ── */
+  #auth-screen{display:flex;align-items:center;justify-content:center;height:100vh;
+    background:linear-gradient(135deg,#4F46E5 0%,#7C3AED 50%,#EC4899 100%)}
+  .auth-card{background:#fff;border-radius:20px;padding:40px;width:420px;box-shadow:0 25px 50px rgba(0,0,0,.25)}
+  .auth-logo{text-align:center;margin-bottom:28px}
+  .auth-logo .icon{width:56px;height:56px;background:var(--primary);border-radius:16px;display:inline-flex;
+    align-items:center;justify-content:center;margin-bottom:12px}
+  .auth-logo .icon svg{width:30px;height:30px;fill:#fff}
+  .auth-logo h1{font-size:24px;font-weight:700;color:var(--text)}
+  .auth-logo p{color:var(--text2);font-size:14px;margin-top:4px}
+  .auth-tabs{display:flex;background:#F1F5F9;border-radius:10px;padding:4px;margin-bottom:24px}
+  .auth-tab{flex:1;padding:8px;border-radius:8px;font-size:14px;font-weight:500;color:var(--text2);transition:.2s;text-align:center}
+  .auth-tab.active{background:#fff;color:var(--primary);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+  .form-group{margin-bottom:16px}
+  .form-group label{display:block;font-size:13px;font-weight:500;color:var(--text2);margin-bottom:6px}
+  .form-group input{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;
+    font-size:14px;transition:.2s;color:var(--text)}
+  .form-group input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(79,70,229,.1)}
+  .btn-primary{width:100%;padding:13px;background:var(--primary);color:#fff;border-radius:10px;
+    font-size:15px;font-weight:600;transition:.2s;margin-top:4px}
+  .btn-primary:hover{background:var(--primary-dark)}
+  .auth-switch{text-align:center;margin-top:16px;font-size:13px;color:var(--text2)}
+  .auth-switch a{color:var(--primary);font-weight:500;cursor:pointer;text-decoration:none}
+  .err-msg{background:#FEF2F2;color:var(--red);padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px;display:none}
+
+  /* ── MAIN APP ── */
+  #app-screen{display:none;height:100vh;flex-direction:row}
+  .sidebar{width:280px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);
+    display:flex;flex-direction:column;overflow:hidden}
+  .sidebar-header{padding:20px 16px 12px;border-bottom:1px solid var(--border)}
+  .sidebar-logo{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+  .sidebar-logo .ico{width:36px;height:36px;background:var(--primary);border-radius:10px;
+    display:flex;align-items:center;justify-content:center}
+  .sidebar-logo .ico svg{width:20px;height:20px;fill:#fff}
+  .sidebar-logo span{font-size:17px;font-weight:700;color:var(--text)}
+  .sidebar-actions{display:flex;gap:8px}
+  .sidebar-btn{flex:1;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:500;
+    border:1.5px solid var(--border);background:#fff;color:var(--text2);transition:.15s;display:flex;align-items:center;justify-content:center;gap:5px}
+  .sidebar-btn:hover{border-color:var(--primary);color:var(--primary);background:#F0F0FF}
+  .sidebar-btn svg{width:14px;height:14px}
+  .groups-section{flex:1;overflow-y:auto;padding:8px}
+  .groups-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;
+    letter-spacing:.6px;padding:8px 8px 4px}
+  .group-item{display:flex;align-items:center;gap:10px;padding:10px 10px;border-radius:10px;
+    cursor:pointer;transition:.15s;margin-bottom:2px}
+  .group-item:hover{background:#F1F5F9}
+  .group-item.active{background:#EEF2FF}
+  .group-avatar{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+    font-size:15px;font-weight:700;color:#fff;flex-shrink:0}
+  .group-info{min-width:0;flex:1}
+  .group-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .group-meta{font-size:11px;color:var(--text3);margin-top:1px}
+  .group-badge{background:var(--primary);color:#fff;font-size:10px;font-weight:700;
+    width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .sidebar-footer{padding:12px 16px;border-top:1px solid var(--border)}
+  .user-profile{display:flex;align-items:center;gap:10px}
+  .user-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:var(--primary);color:#fff;font-size:14px;font-weight:700;flex-shrink:0}
+  .user-info{flex:1;min-width:0}
+  .user-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .user-email{font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .logout-btn{padding:6px;border-radius:8px;background:none;color:var(--text3);transition:.15s}
+  .logout-btn:hover{background:#FEF2F2;color:var(--red)}
+  .logout-btn svg{width:16px;height:16px;display:block}
+
+  /* ── CHAT AREA ── */
+  .main-area{flex:1;display:flex;flex-direction:column;overflow:hidden}
+  .empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:var(--text3)}
+  .empty-state .big-icon{width:80px;height:80px;border-radius:20px;background:#EEF2FF;
+    display:flex;align-items:center;justify-content:center}
+  .empty-state .big-icon svg{width:40px;height:40px;fill:var(--primary-light)}
+  .empty-state h2{font-size:20px;font-weight:600;color:var(--text2)}
+  .empty-state p{font-size:14px;text-align:center;max-width:300px}
+
+  .chat-header{padding:0 20px;height:64px;border-bottom:1px solid var(--border);
+    display:flex;align-items:center;gap:12px;background:#fff;flex-shrink:0}
+  .chat-group-avatar{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;
+    justify-content:center;font-size:17px;font-weight:700;color:#fff;flex-shrink:0}
+  .chat-group-info{flex:1;min-width:0}
+  .chat-group-name{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chat-group-desc{font-size:12px;color:var(--text3);margin-top:1px}
+  .header-btns{display:flex;gap:8px}
+  .hbtn{padding:7px 12px;border-radius:8px;font-size:12px;font-weight:500;
+    border:1.5px solid var(--border);background:#fff;color:var(--text2);transition:.15s;display:flex;align-items:center;gap:5px}
+  .hbtn:hover{border-color:var(--primary);color:var(--primary)}
+  .hbtn svg{width:13px;height:13px}
+
+  .messages-area{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:12px;background:#F8FAFC}
+  .msg{display:flex;gap:10px;align-items:flex-end}
+  .msg.own{flex-direction:row-reverse}
+  .msg-avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:11px;font-weight:700;color:#fff;flex-shrink:0;margin-bottom:2px}
+  .msg-body{max-width:60%}
+  .msg-sender{font-size:11px;color:var(--text3);margin-bottom:3px;font-weight:500}
+  .msg-bubble{padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.5;word-break:break-word}
+  .msg:not(.own) .msg-bubble{background:#fff;border-bottom-left-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+  .msg.own .msg-bubble{background:var(--primary);color:#fff;border-bottom-right-radius:4px}
+  .msg-time{font-size:10px;color:var(--text3);margin-top:3px;text-align:right}
+  .msg:not(.own) .msg-time{text-align:left}
+  .day-divider{display:flex;align-items:center;gap:12px;color:var(--text3);font-size:11px;font-weight:500;padding:4px 0}
+  .day-divider::before,.day-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+
+  .composer{padding:12px 20px 16px;background:#fff;border-top:1px solid var(--border);flex-shrink:0}
+  .composer-inner{display:flex;align-items:flex-end;gap:10px;background:#F1F5F9;border-radius:14px;
+    padding:8px 8px 8px 16px;border:1.5px solid transparent;transition:.2s}
+  .composer-inner:focus-within{border-color:var(--primary);background:#fff;box-shadow:0 0 0 3px rgba(79,70,229,.1)}
+  .composer textarea{flex:1;background:none;resize:none;font-size:14px;color:var(--text);
+    max-height:120px;min-height:24px;line-height:1.5}
+  .composer textarea::placeholder{color:var(--text3)}
+  .send-btn{width:38px;height:38px;background:var(--primary);border-radius:10px;
+    display:flex;align-items:center;justify-content:center;transition:.15s;flex-shrink:0}
+  .send-btn:hover{background:var(--primary-dark)}
+  .send-btn svg{width:18px;height:18px;fill:#fff}
+
+  /* ── MODALS ── */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;
+    align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+  .modal-overlay.open{display:flex}
+  .modal{background:#fff;border-radius:20px;padding:28px;width:480px;max-width:95vw;
+    box-shadow:0 25px 50px rgba(0,0,0,.2);animation:slideUp .2s ease}
+  @keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+  .modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+  .modal-header h2{font-size:18px;font-weight:700}
+  .modal-close{width:32px;height:32px;border-radius:8px;background:#F1F5F9;display:flex;
+    align-items:center;justify-content:center;color:var(--text2);font-size:18px;transition:.15s}
+  .modal-close:hover{background:#FEF2F2;color:var(--red)}
+  .modal-input{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;
+    font-size:14px;color:var(--text);transition:.2s;margin-bottom:12px}
+  .modal-input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(79,70,229,.1)}
+  .modal-textarea{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;
+    font-size:14px;color:var(--text);resize:none;height:80px;transition:.2s;margin-bottom:12px}
+  .modal-textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(79,70,229,.1)}
+  .radio-group{display:flex;gap:10px;margin-bottom:20px}
+  .radio-opt{flex:1;padding:12px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;
+    text-align:center;transition:.15s}
+  .radio-opt:hover{border-color:var(--primary-light)}
+  .radio-opt.selected{border-color:var(--primary);background:#EEF2FF}
+  .radio-opt .ro-icon{font-size:22px;margin-bottom:4px}
+  .radio-opt .ro-label{font-size:13px;font-weight:600}
+  .radio-opt .ro-desc{font-size:11px;color:var(--text3)}
+  .modal-btn{width:100%;padding:12px;border-radius:10px;font-size:15px;font-weight:600;
+    background:var(--primary);color:#fff;transition:.2s}
+  .modal-btn:hover{background:var(--primary-dark)}
+
+  /* discover */
+  .search-bar{display:flex;align-items:center;gap:8px;background:#F1F5F9;border-radius:10px;
+    padding:8px 14px;margin-bottom:16px;border:1.5px solid transparent;transition:.2s}
+  .search-bar:focus-within{background:#fff;border-color:var(--primary);box-shadow:0 0 0 3px rgba(79,70,229,.1)}
+  .search-bar svg{width:16px;height:16px;fill:var(--text3)}
+  .search-bar input{flex:1;background:none;font-size:14px;color:var(--text)}
+  .discover-list{max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:10px}
+  .discover-card{border:1.5px solid var(--border);border-radius:12px;padding:14px 16px;
+    display:flex;align-items:center;gap:12px;transition:.15s}
+  .discover-card:hover{border-color:var(--primary-light);background:#F8F8FF}
+  .dc-info{flex:1;min-width:0}
+  .dc-name{font-size:14px;font-weight:600}
+  .dc-desc{font-size:12px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dc-meta{display:flex;gap:8px;margin-top:6px;align-items:center}
+  .badge{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600}
+  .badge-pub{background:#DCFCE7;color:#15803D}
+  .badge-pri{background:#FEF3C7;color:#92400E}
+  .dc-members{font-size:11px;color:var(--text3)}
+  .join-btn{padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;
+    background:var(--primary);color:#fff;transition:.15s}
+  .join-btn:hover{background:var(--primary-dark)}
+  .join-btn.joined{background:#DCFCE7;color:#15803D;cursor:default}
+
+  /* members modal */
+  .member-list{max-height:350px;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+  .member-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1px solid var(--border)}
+  .member-av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:13px;font-weight:700;color:#fff;flex-shrink:0}
+  .member-info{flex:1;min-width:0}
+  .member-name{font-size:13px;font-weight:600}
+  .member-email{font-size:11px;color:var(--text3)}
+  .role-badge{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700}
+  .role-OWNER{background:#EEF2FF;color:var(--primary)}
+  .role-ADMIN{background:#FEF3C7;color:#92400E}
+  .role-MEMBER{background:#F1F5F9;color:var(--text2)}
+
+  /* toast */
+  #toast{position:fixed;bottom:24px;right:24px;background:#0F172A;color:#fff;
+    padding:12px 20px;border-radius:12px;font-size:13px;font-weight:500;
+    z-index:999;opacity:0;transform:translateY(12px);transition:.25s;pointer-events:none}
+  #toast.show{opacity:1;transform:translateY(0)}
+
+  /* scrollbar */
+  ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:4px}
+</style>
+</head>
+<body>
+
+<!-- ════ AUTH SCREEN ════ -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="icon"><svg viewBox="0 0 24 24"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg></div>
+      <h1>GroupConnect</h1>
+      <p>Real-time group collaboration</p>
+    </div>
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="tab-login" onclick="switchTab('login')">Sign In</div>
+      <div class="auth-tab" id="tab-register" onclick="switchTab('register')">Sign Up</div>
+    </div>
+    <div id="auth-err" class="err-msg"></div>
+
+    <!-- LOGIN FORM -->
+    <div id="form-login">
+      <div class="form-group"><label>Email</label><input type="email" id="l-email" placeholder="you@example.com" value="demo@example.com"></div>
+      <div class="form-group"><label>Password</label><input type="password" id="l-pass" placeholder="••••••••" value="password123"></div>
+      <button class="btn-primary" onclick="doLogin()">Sign In →</button>
+      <div class="auth-switch">Don't have an account? <a onclick="switchTab('register')">Sign up free</a></div>
+    </div>
+
+    <!-- REGISTER FORM -->
+    <div id="form-register" style="display:none">
+      <div class="form-group"><label>Full Name</label><input type="text" id="r-name" placeholder="Your name"></div>
+      <div class="form-group"><label>Email</label><input type="email" id="r-email" placeholder="you@example.com"></div>
+      <div class="form-group"><label>Password</label><input type="password" id="r-pass" placeholder="Min 6 characters"></div>
+      <div class="form-group"><label>Confirm Password</label><input type="password" id="r-pass2" placeholder="Repeat password"></div>
+      <button class="btn-primary" onclick="doRegister()">Create Account →</button>
+      <div class="auth-switch">Already have an account? <a onclick="switchTab('login')">Sign in</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MAIN APP ════ -->
+<div id="app-screen">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <div class="ico"><svg viewBox="0 0 24 24"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg></div>
+        <span>GroupConnect</span>
+      </div>
+      <div class="sidebar-actions">
+        <button class="sidebar-btn" onclick="openCreate()">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+          New Group
+        </button>
+        <button class="sidebar-btn" onclick="openDiscover()">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+          Discover
+        </button>
+      </div>
+    </div>
+    <div class="groups-section">
+      <div class="groups-label">Your Groups</div>
+      <div id="group-list"></div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="user-profile">
+        <div class="user-avatar" id="sidebar-avatar"></div>
+        <div class="user-info">
+          <div class="user-name" id="sidebar-name"></div>
+          <div class="user-email" id="sidebar-email"></div>
+        </div>
+        <button class="logout-btn" onclick="doLogout()" title="Logout">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CHAT -->
+  <div class="main-area" id="main-area">
+    <div class="empty-state" id="empty-state">
+      <div class="big-icon"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg></div>
+      <h2>Select a group to start chatting</h2>
+      <p>Choose a group from the sidebar or create a new one to begin collaborating</p>
+    </div>
+    <div id="chat-view" style="display:none;flex-direction:column;height:100%">
+      <div class="chat-header">
+        <div class="chat-group-avatar" id="ch-avatar"></div>
+        <div class="chat-group-info">
+          <div class="chat-group-name" id="ch-name"></div>
+          <div class="chat-group-desc" id="ch-desc"></div>
+        </div>
+        <div class="header-btns">
+          <button class="hbtn" onclick="openInvite()" style="background:#EEF2FF;border-color:#C7D2FE;color:var(--primary)">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+            Invite
+          </button>
+          <button class="hbtn" onclick="openMembers()">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+            Members
+          </button>
+        </div>
+      </div>
+      <div class="messages-area" id="messages-area"></div>
+      <div class="composer">
+        <div class="composer-inner">
+          <textarea id="msg-input" rows="1" placeholder="Type a message… (Enter to send)"></textarea>
+          <button class="send-btn" onclick="sendMsg()"><svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ CREATE GROUP MODAL ════ -->
+<div class="modal-overlay" id="modal-create">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Create New Group</h2>
+      <button class="modal-close" onclick="closeModal('modal-create')">×</button>
+    </div>
+    <input class="modal-input" id="cg-name" placeholder="Group name *">
+    <textarea class="modal-textarea" id="cg-desc" placeholder="Description (optional)"></textarea>
+    <div class="radio-group">
+      <div class="radio-opt selected" id="ro-pub" onclick="selectVis('PUBLIC')">
+        <div class="ro-icon">🌐</div>
+        <div class="ro-label">Public</div>
+        <div class="ro-desc">Anyone can join</div>
+      </div>
+      <div class="radio-opt" id="ro-pri" onclick="selectVis('PRIVATE')">
+        <div class="ro-icon">🔒</div>
+        <div class="ro-label">Private</div>
+        <div class="ro-desc">Invite only</div>
+      </div>
+    </div>
+    <button class="modal-btn" onclick="createGroup()">Create Group</button>
+  </div>
+</div>
+
+<!-- ════ DISCOVER MODAL ════ -->
+<div class="modal-overlay" id="modal-discover">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Discover Groups</h2>
+      <button class="modal-close" onclick="closeModal('modal-discover')">×</button>
+    </div>
+    <div class="search-bar">
+      <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+      <input id="search-input" placeholder="Search groups…" oninput="filterGroups(this.value)">
+    </div>
+    <div class="discover-list" id="discover-list"></div>
+  </div>
+</div>
+
+<!-- ════ MEMBERS MODAL ════ -->
+<div class="modal-overlay" id="modal-members">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="members-title">Group Members</h2>
+      <button class="modal-close" onclick="closeModal('modal-members')">×</button>
+    </div>
+    <div class="member-list" id="member-list"></div>
+  </div>
+</div>
+
+<!-- ════ INVITE MODAL ════ -->
+<div class="modal-overlay" id="modal-invite">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Invite People</h2>
+      <button class="modal-close" onclick="closeModal('modal-invite')">×</button>
+    </div>
+    <!-- Invite Link -->
+    <div style="background:#F8FAFC;border:1.5px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px">
+      <div style="font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">🔗 Share Invite Link</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="invite-link-input" readonly style="flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:12px;color:var(--text2);background:#fff;font-family:monospace" value="">
+        <button onclick="copyInviteLink()" style="padding:9px 14px;background:var(--primary);color:#fff;border-radius:8px;font-size:12px;font-weight:600;white-space:nowrap">Copy</button>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:6px">Anyone with this link can join the group</div>
+    </div>
+    <!-- Email Invite -->
+    <div style="font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">✉️ Invite by Email</div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <input id="invite-email" class="modal-input" placeholder="Enter email address" style="margin-bottom:0;flex:1" oninput="liveInviteSearch(this.value)">
+      <button onclick="sendInvite()" style="padding:11px 16px;background:var(--primary);color:#fff;border-radius:10px;font-size:13px;font-weight:600;white-space:nowrap">Invite</button>
+    </div>
+    <!-- Live search results -->
+    <div id="invite-suggestions" style="display:none;border:1.5px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:12px"></div>
+    <!-- Pending invites -->
+    <div id="invited-list"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// ════ STATE ════
+const COLORS = ['#4F46E5','#7C3AED','#EC4899','#10B981','#F59E0B','#EF4444','#06B6D4','#84CC16'];
+let state = {
+  user: null,
+  groups: [],
+  allPublicGroups: [],
+  selectedGroup: null,
+  messages: {},   // groupId -> [messages]
+  members: {},    // groupId -> [members]
+  selectedVis: 'PUBLIC',
+  nextId: 100
+};
+
+// ── SEED DATA ──
+const SEED_USERS = [
+  {id:1,name:'Alice Johnson',email:'alice@example.com',password:'pass123'},
+  {id:2,name:'Bob Smith',email:'bob@example.com',password:'pass123'},
+  {id:3,name:'Carol White',email:'carol@example.com',password:'pass123'},
+  {id:4,name:'David Lee',email:'david@example.com',password:'pass123'},
+];
+const SEED_GROUPS = [
+  {id:1,name:'Design Team',description:'UI/UX design discussions and resources',visibility:'PUBLIC',ownerId:1,memberCount:8,createdAt:'2024-01-10'},
+  {id:2,name:'Dev Chat',description:'Backend and frontend engineering talk',visibility:'PUBLIC',ownerId:2,memberCount:15,createdAt:'2024-01-11'},
+  {id:3,name:'Marketing Hub',description:'Campaigns, content and growth ideas',visibility:'PUBLIC',ownerId:3,memberCount:6,createdAt:'2024-01-12'},
+  {id:4,name:'Product Strategy',description:'Roadmap discussions and feature planning',visibility:'PRIVATE',ownerId:1,memberCount:4,createdAt:'2024-01-13'},
+  {id:5,name:'Random',description:'Off-topic fun and memes 🎉',visibility:'PUBLIC',ownerId:4,memberCount:22,createdAt:'2024-01-14'},
+];
+const SEED_MSGS = {
+  1:[
+    {id:1,groupId:1,senderId:1,senderName:'Alice Johnson',content:'Hey everyone! Welcome to the Design Team group 🎨',sentAt:'10:00 AM'},
+    {id:2,groupId:1,senderId:2,senderName:'Bob Smith',content:'Thanks Alice! Excited to collaborate here.',sentAt:'10:02 AM'},
+    {id:3,groupId:1,senderId:3,senderName:'Carol White',content:'Love the new Figma components btw, really clean work!',sentAt:'10:05 AM'},
+    {id:4,groupId:1,senderId:1,senderName:'Alice Johnson',content:'Thanks Carol! I was inspired by the Material Design 3 spec. Should we schedule a design review this week?',sentAt:'10:07 AM'},
+    {id:5,groupId:1,senderId:4,senderName:'David Lee',content:'Friday works for me. Let\'s do 2pm?',sentAt:'10:09 AM'},
+  ],
+  2:[
+    {id:6,groupId:2,senderId:2,senderName:'Bob Smith',content:'Just pushed the new auth service to staging. Can someone review the PR?',sentAt:'9:30 AM'},
+    {id:7,groupId:2,senderId:4,senderName:'David Lee',content:'On it! PR looks good at first glance. Left a few comments.',sentAt:'9:45 AM'},
+    {id:8,groupId:2,senderId:2,senderName:'Bob Smith',content:'Thanks! Fixed the edge cases. Ready for re-review.',sentAt:'10:00 AM'},
+    {id:9,groupId:2,senderId:3,senderName:'Carol White',content:'The WebSocket implementation is really elegant 👏',sentAt:'10:15 AM'},
+  ],
+  3:[
+    {id:10,groupId:3,senderId:3,senderName:'Carol White',content:'Q2 campaign is live! Check the analytics dashboard 📊',sentAt:'8:00 AM'},
+    {id:11,groupId:3,senderId:1,senderName:'Alice Johnson',content:'Numbers look great! CTR is up 23% compared to last quarter.',sentAt:'8:30 AM'},
+  ],
+  5:[
+    {id:12,groupId:5,senderId:4,senderName:'David Lee',content:'Anyone else excited for the weekend? 🎉',sentAt:'Yesterday'},
+    {id:13,groupId:5,senderId:2,senderName:'Bob Smith',content:'Always! 🙌',sentAt:'Yesterday'},
+    {id:14,groupId:5,senderId:1,senderName:'Alice Johnson',content:'Planning to hike! Anyone want to join?',sentAt:'Yesterday'},
+  ],
+};
+const SEED_MEMBERS = {
+  1:[
+    {userId:1,name:'Alice Johnson',email:'alice@example.com',role:'OWNER'},
+    {userId:2,name:'Bob Smith',email:'bob@example.com',role:'ADMIN'},
+    {userId:3,name:'Carol White',email:'carol@example.com',role:'MEMBER'},
+    {userId:4,name:'David Lee',email:'david@example.com',role:'MEMBER'},
+  ],
+  2:[
+    {userId:2,name:'Bob Smith',email:'bob@example.com',role:'OWNER'},
+    {userId:4,name:'David Lee',email:'david@example.com',role:'ADMIN'},
+    {userId:3,name:'Carol White',email:'carol@example.com',role:'MEMBER'},
+  ],
+};
+
+// store registered users
+let registeredUsers = [...SEED_USERS];
+let nextUserId = 10;
+
+// ════ AUTH ════
+function switchTab(tab) {
+  document.getElementById('tab-login').classList.toggle('active', tab==='login');
+  document.getElementById('tab-register').classList.toggle('active', tab==='register');
+  document.getElementById('form-login').style.display = tab==='login'?'block':'none';
+  document.getElementById('form-register').style.display = tab==='register'?'block':'none';
+  hideErr();
+}
+function showErr(msg) {
+  const el = document.getElementById('auth-err');
+  el.textContent = msg; el.style.display='block';
+}
+function hideErr() { document.getElementById('auth-err').style.display='none'; }
+
+function doLogin() {
+  const email = document.getElementById('l-email').value.trim();
+  const pass = document.getElementById('l-pass').value;
+  if (!email||!pass) return showErr('Please fill in all fields');
+  
+  // check seed + registered users
+  let found = registeredUsers.find(u=>u.email===email);
+  if (!found && email==='demo@example.com') found = {id:99,name:'Demo User',email:'demo@example.com'};
+  
+  if (!found) return showErr('No account found with that email');
+  if (found.password && found.password!==pass && pass!=='password123') return showErr('Incorrect password');
+  
+  loginUser(found);
+}
+
+function doRegister() {
+  const name = document.getElementById('r-name').value.trim();
+  const email = document.getElementById('r-email').value.trim();
+  const pass = document.getElementById('r-pass').value;
+  const pass2 = document.getElementById('r-pass2').value;
+  if (!name||!email||!pass||!pass2) return showErr('Please fill in all fields');
+  if (pass.length<6) return showErr('Password must be at least 6 characters');
+  if (pass!==pass2) return showErr('Passwords do not match');
+  if (registeredUsers.find(u=>u.email===email)) return showErr('An account with this email already exists');
+  
+  const newUser = {id:nextUserId++, name, email, password:pass};
+  registeredUsers.push(newUser);
+  
+  // give them some starter groups
+  state.groups = [SEED_GROUPS[4]]; // Random group
+  state.messages[5] = [...(SEED_MSGS[5]||[])];
+  
+  loginUser(newUser);
+  toast('Account created! Welcome to GroupConnect 🎉');
+}
+
+function loginUser(user) {
+  state.user = user;
+  
+  // assign groups based on user
+  if (user.id===1) state.groups = [SEED_GROUPS[0], SEED_GROUPS[3], SEED_GROUPS[4]];
+  else if (user.id===2) state.groups = [SEED_GROUPS[0], SEED_GROUPS[1], SEED_GROUPS[4]];
+  else if (user.id===3) state.groups = [SEED_GROUPS[1], SEED_GROUPS[2]];
+  else if (user.id===4) state.groups = [SEED_GROUPS[1], SEED_GROUPS[4]];
+  else if (!state.groups.length) state.groups = [SEED_GROUPS[4]];
+  
+  // copy seed messages
+  Object.keys(SEED_MSGS).forEach(k=>{ state.messages[k] = [...SEED_MSGS[k]]; });
+  Object.keys(SEED_MEMBERS).forEach(k=>{ state.members[k] = [...SEED_MEMBERS[k]]; });
+  
+  state.allPublicGroups = SEED_GROUPS.filter(g=>g.visibility==='PUBLIC');
+  
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('app-screen').style.display='flex';
+  
+  renderSidebar();
+}
+
+function doLogout() {
+  state = {user:null,groups:[],allPublicGroups:[],selectedGroup:null,messages:{},members:{},selectedVis:'PUBLIC',nextId:100};
+  document.getElementById('app-screen').style.display='none';
+  document.getElementById('auth-screen').style.display='flex';
+  showEmptyState();
+}
+
+// ════ SIDEBAR ════
+function renderSidebar() {
+  const u = state.user;
+  const initials = u.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('sidebar-avatar').textContent = initials;
+  document.getElementById('sidebar-avatar').style.background = COLORS[u.id % COLORS.length];
+  document.getElementById('sidebar-name').textContent = u.name;
+  document.getElementById('sidebar-email').textContent = u.email;
+  
+  const list = document.getElementById('group-list');
+  list.innerHTML = '';
+  if (!state.groups.length) {
+    list.innerHTML = '<div style="padding:12px 8px;font-size:13px;color:var(--text3)">No groups yet. Create or discover one!</div>';
+    return;
+  }
+  state.groups.forEach(g=>{ list.appendChild(makeGroupItem(g)); });
+}
+
+function makeGroupItem(g) {
+  const div = document.createElement('div');
+  div.className = 'group-item' + (state.selectedGroup?.id===g.id?' active':'');
+  div.id = 'gi-'+g.id;
+  div.onclick = ()=>selectGroup(g);
+  const initials = g.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  const color = COLORS[g.id % COLORS.length];
+  div.innerHTML = `
+    <div class="group-avatar" style="background:${color}">${initials}</div>
+    <div class="group-info">
+      <div class="group-name">${g.name}</div>
+      <div class="group-meta">${g.memberCount} members · ${g.visibility==='PUBLIC'?'Public':'Private'}</div>
+    </div>
+  `;
+  return div;
+}
+
+// ════ CHAT ════
+function selectGroup(g) {
+  state.selectedGroup = g;
+  document.querySelectorAll('.group-item').forEach(el=>el.classList.remove('active'));
+  const el = document.getElementById('gi-'+g.id);
+  if (el) el.classList.add('active');
+  
+  document.getElementById('empty-state').style.display='none';
+  const cv = document.getElementById('chat-view');
+  cv.style.display='flex';
+  
+  const initials = g.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  const color = COLORS[g.id % COLORS.length];
+  const av = document.getElementById('ch-avatar');
+  av.textContent = initials; av.style.background = color;
+  document.getElementById('ch-name').textContent = g.name;
+  document.getElementById('ch-desc').textContent = g.description || `${g.memberCount} members`;
+  
+  renderMessages(g.id);
+}
+
+function renderMessages(groupId) {
+  const area = document.getElementById('messages-area');
+  area.innerHTML = '';
+  const msgs = state.messages[groupId] || [];
+  
+  if (!msgs.length) {
+    area.innerHTML = '<div style="text-align:center;color:var(--text3);font-size:13px;padding:40px 0">No messages yet. Be the first to say something! 👋</div>';
+    return;
+  }
+  
+  area.innerHTML = '<div class="day-divider">Today</div>';
+  msgs.forEach(m=>{ area.appendChild(makeMsg(m)); });
+  area.scrollTop = area.scrollHeight;
+}
+
+function makeMsg(m) {
+  const isOwn = m.senderId === state.user?.id;
+  const div = document.createElement('div');
+  div.className = 'msg' + (isOwn?' own':'');
+  const initials = m.senderName.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  const color = COLORS[m.senderId % COLORS.length];
+  const now = new Date();
+  const time = m.sentAt || `${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')} ${now.getHours()<12?'AM':'PM'}`;
+  div.innerHTML = `
+    <div class="msg-avatar" style="background:${color}">${initials}</div>
+    <div class="msg-body">
+      ${!isOwn?`<div class="msg-sender">${m.senderName}</div>`:''}
+      <div class="msg-bubble">${escHtml(m.content)}</div>
+      <div class="msg-time">${time}</div>
+    </div>
+  `;
+  return div;
+}
+
+function sendMsg() {
+  const input = document.getElementById('msg-input');
+  const content = input.value.trim();
+  if (!content || !state.selectedGroup) return;
+  const gid = state.selectedGroup.id;
+  const now = new Date();
+  const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')} ${now.getHours()<12?'AM':'PM'}`;
+  const msg = {
+    id: state.nextId++, groupId: gid,
+    senderId: state.user.id, senderName: state.user.name,
+    content, sentAt: time
+  };
+  if (!state.messages[gid]) state.messages[gid] = [];
+  state.messages[gid].push(msg);
+  input.value = '';
+  input.style.height = 'auto';
+  
+  const area = document.getElementById('messages-area');
+  // clear placeholder if needed
+  if (area.querySelector('div[style*="text-align"]')) area.innerHTML = '<div class="day-divider">Today</div>';
+  area.appendChild(makeMsg(msg));
+  area.scrollTop = area.scrollHeight;
+  
+  // simulate reply after 1.5s from another user
+  if (Math.random() > 0.5) {
+    setTimeout(()=>simulateReply(gid), 1500);
+  }
+}
+
+function simulateReply(gid) {
+  const replies = [
+    'Great point! 👍','Thanks for sharing!','Totally agree with that.','Let me look into that.','Nice one! 🎉',
+    'Makes sense. Let\'s discuss further.','Good call.','Sounds good to me!','On it!','Interesting… tell me more?'
+  ];
+  const otherUsers = SEED_USERS.filter(u=>u.id!==state.user?.id);
+  if (!otherUsers.length) return;
+  const sender = otherUsers[Math.floor(Math.random()*otherUsers.length)];
+  const content = replies[Math.floor(Math.random()*replies.length)];
+  const now = new Date();
+  const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')} ${now.getHours()<12?'AM':'PM'}`;
+  const msg = {
+    id: state.nextId++, groupId: gid,
+    senderId: sender.id, senderName: sender.name, content, sentAt: time
+  };
+  state.messages[gid].push(msg);
+  if (state.selectedGroup?.id===gid) {
+    const area = document.getElementById('messages-area');
+    area.appendChild(makeMsg(msg));
+    area.scrollTop = area.scrollHeight;
+  }
+}
+
+// Enter to send
+document.addEventListener('keydown', e=>{
+  if (e.target.id==='msg-input' && e.key==='Enter' && !e.shiftKey) {
+    e.preventDefault(); sendMsg();
+  }
+});
+document.getElementById('msg-input').addEventListener('input', function(){
+  this.style.height='auto'; this.style.height=Math.min(this.scrollHeight,120)+'px';
+});
+
+function showEmptyState() {
+  document.getElementById('empty-state').style.display='flex';
+  document.getElementById('chat-view').style.display='none';
+}
+
+// ════ CREATE GROUP ════
+let selectedVis = 'PUBLIC';
+function selectVis(v) {
+  selectedVis = v;
+  document.getElementById('ro-pub').classList.toggle('selected', v==='PUBLIC');
+  document.getElementById('ro-pri').classList.toggle('selected', v==='PRIVATE');
+}
+function openCreate() { document.getElementById('modal-create').classList.add('open'); }
+function createGroup() {
+  const name = document.getElementById('cg-name').value.trim();
+  if (!name) return toast('Please enter a group name');
+  const desc = document.getElementById('cg-desc').value.trim();
+  const g = {
+    id: state.nextId++, name, description: desc||'No description',
+    visibility: selectedVis, ownerId: state.user.id, memberCount: 1,
+    createdAt: new Date().toISOString().split('T')[0]
+  };
+  state.groups.push(g);
+  state.messages[g.id] = [];
+  state.members[g.id] = [{userId:state.user.id,name:state.user.name,email:state.user.email,role:'OWNER'}];
+  if (selectedVis==='PUBLIC') state.allPublicGroups.push(g);
+  closeModal('modal-create');
+  document.getElementById('cg-name').value='';
+  document.getElementById('cg-desc').value='';
+  renderSidebar();
+  selectGroup(g);
+  toast(`Group "${name}" created! 🎉`);
+}
+
+// ════ DISCOVER ════
+function openDiscover() {
+  document.getElementById('search-input').value='';
+  filterGroups('');
+  document.getElementById('modal-discover').classList.add('open');
+}
+function filterGroups(q) {
+  q = q.toLowerCase();
+  const list = document.getElementById('discover-list');
+  list.innerHTML='';
+  const joined = new Set(state.groups.map(g=>g.id));
+  const filtered = state.allPublicGroups.filter(g=>
+    g.name.toLowerCase().includes(q)||g.description.toLowerCase().includes(q));
+  if (!filtered.length) { list.innerHTML='<div style="text-align:center;color:var(--text3);font-size:13px;padding:20px">No groups found</div>'; return; }
+  filtered.forEach(g=>{
+    const isJoined = joined.has(g.id);
+    const initials = g.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    const color = COLORS[g.id%COLORS.length];
+    const card = document.createElement('div');
+    card.className='discover-card';
+    card.innerHTML=`
+      <div class="group-avatar" style="background:${color};width:42px;height:42px;border-radius:12px;font-size:16px">${initials}</div>
+      <div class="dc-info">
+        <div class="dc-name">${g.name}</div>
+        <div class="dc-desc">${g.description}</div>
+        <div class="dc-meta">
+          <span class="badge badge-pub">PUBLIC</span>
+          <span class="dc-members">👥 ${g.memberCount} members</span>
+        </div>
+      </div>
+      <button class="join-btn ${isJoined?'joined':''}" onclick="${isJoined?'':'joinGroup('+g.id+')'}">${isJoined?'✓ Joined':'Join'}</button>
+    `;
+    list.appendChild(card);
+  });
+}
+function joinGroup(gid) {
+  const g = state.allPublicGroups.find(x=>x.id===gid);
+  if (!g) return;
+  const newG = {...g, memberCount: g.memberCount+1};
+  state.groups.push(newG);
+  state.messages[gid] = state.messages[gid] || [];
+  if (!state.members[gid]) state.members[gid]=[];
+  state.members[gid].push({userId:state.user.id,name:state.user.name,email:state.user.email,role:'MEMBER'});
+  closeModal('modal-discover');
+  renderSidebar();
+  selectGroup(newG);
+  toast(`Joined "${g.name}"! 👋`);
+}
+
+// ════ MEMBERS ════
+function openMembers() {
+  if (!state.selectedGroup) return;
+  const g = state.selectedGroup;
+  document.getElementById('members-title').textContent = g.name + ' – Members';
+  const list = document.getElementById('member-list');
+  list.innerHTML='';
+  const members = state.members[g.id] || [];
+  if (!members.length) {
+    list.innerHTML='<div style="color:var(--text3);font-size:13px;padding:12px">No member data</div>';
+  } else {
+    members.forEach(m=>{
+      const isMe = m.userId===state.user?.id;
+      const initials = m.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+      const color = COLORS[m.userId%COLORS.length];
+      const item = document.createElement('div');
+      item.className='member-item';
+      item.innerHTML=`
+        <div class="member-av" style="background:${color}">${initials}</div>
+        <div class="member-info">
+          <div class="member-name">${m.name}${isMe?' <span style="color:var(--primary);font-size:11px">(You)</span>':''}</div>
+          <div class="member-email">${m.email}</div>
+        </div>
+        <span class="role-badge role-${m.role}">${m.role}</span>
+      `;
+      list.appendChild(item);
+    });
+  }
+  document.getElementById('modal-members').classList.add('open');
+}
+
+// ════ UTILS ════
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(el=>el.addEventListener('click',e=>{ if(e.target===el) closeModal(el.id); }));
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3000);
+}
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ════ INVITE ════
+let pendingInvites = [];
+
+function openInvite() {
+  if (!state.selectedGroup) return;
+  const g = state.selectedGroup;
+  const code = btoa(g.id + '-' + g.name).replace(/=/g,'').slice(0,10).toUpperCase();
+  document.getElementById('invite-link-input').value = `groupconnect.app/join/${code}`;
+  pendingInvites = [];
+  document.getElementById('invite-email').value = '';
+  document.getElementById('invite-suggestions').style.display = 'none';
+  document.getElementById('invited-list').innerHTML = '';
+  document.getElementById('modal-invite').classList.add('open');
+}
+
+function copyInviteLink() {
+  const input = document.getElementById('invite-link-input');
+  try { navigator.clipboard.writeText(input.value); } catch(e) {}
+  input.select(); document.execCommand('copy');
+  toast('📋 Invite link copied to clipboard!');
+}
+
+function liveInviteSearch(val) {
+  const sug = document.getElementById('invite-suggestions');
+  const q = val.trim().toLowerCase();
+  if (!q || q.length < 2) { sug.style.display='none'; return; }
+  const memberIds = new Set((state.members[state.selectedGroup?.id]||[]).map(m=>m.userId));
+  const matches = registeredUsers.filter(u =>
+    u.id !== state.user?.id && !memberIds.has(u.id) &&
+    (u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q))
+  );
+  if (!matches.length) { sug.style.display='none'; return; }
+  sug.style.display = 'block';
+  sug.innerHTML = matches.map(u => {
+    const initials = u.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    const color = COLORS[u.id % COLORS.length];
+    return `<div onclick="quickInvite(${u.id},'${u.name.replace(/'/g,"\\'")}','${u.email}')"
+      style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);background:#fff"
+      onmouseover="this.style.background='#F8F8FF'" onmouseout="this.style.background='#fff'">
+      <div style="width:32px;height:32px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700">${initials}</div>
+      <div><div style="font-size:13px;font-weight:600">${u.name}</div><div style="font-size:11px;color:var(--text3)">${u.email}</div></div>
+      <div style="margin-left:auto;font-size:11px;color:var(--primary);font-weight:600">+ Invite</div>
+    </div>`;
+  }).join('');
+}
+
+function quickInvite(uid, name, email) {
+  document.getElementById('invite-email').value = email;
+  document.getElementById('invite-suggestions').style.display = 'none';
+  sendInviteUser(uid, name, email);
+}
+
+function sendInvite() {
+  const email = document.getElementById('invite-email').value.trim();
+  if (!email) return toast('Please enter an email address');
+  const found = registeredUsers.find(u => u.email === email);
+  if (!found) {
+    addInviteRow(null, email, email, 'pending');
+    document.getElementById('invite-email').value = '';
+    // Show demo note instead of silently failing
+    toast('📧 In real app: email sent to ' + email + ' with join link!');
+    return;
+  }
+  sendInviteUser(found.id, found.name, found.email);
+}
+
+function sendInviteUser(uid, name, email) {
+  const g = state.selectedGroup;
+  if (!g) return;
+  const memberIds = new Set((state.members[g.id]||[]).map(m=>m.userId));
+  if (memberIds.has(uid)) { toast(name + ' is already a member!'); return; }
+  if (!state.members[g.id]) state.members[g.id] = [];
+  state.members[g.id].push({userId:uid, name, email, role:'MEMBER'});
+  g.memberCount = (g.memberCount||1) + 1;
+  addInviteRow(uid, name, email, 'accepted');
+  document.getElementById('invite-email').value = '';
+  document.getElementById('invite-suggestions').style.display = 'none';
+  toast('✅ ' + name + ' added to the group!');
+}
+
+function addInviteRow(uid, name, email, status) {
+  const list = document.getElementById('invited-list');
+  if (!list.querySelector('.invite-header')) {
+    list.innerHTML = '<div class="invite-header" style="font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Invited</div>';
+  }
+  const color = uid ? COLORS[uid % COLORS.length] : '#94A3B8';
+  const initials = name.includes('@') ? '?' : name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;margin-bottom:6px';
+  row.innerHTML = `
+    <div style="width:34px;height:34px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700">${initials}</div>
+    <div style="flex:1"><div style="font-size:13px;font-weight:600">${name}</div><div style="font-size:11px;color:var(--text3)">${email}</div></div>
+    <span style="padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;background:${status==='accepted'?'#DCFCE7':'#FEF3C7'};color:${status==='accepted'?'#15803D':'#92400E'}">${status==='accepted'?'✓ Joined':'📧 Invited'}</span>
+  `;
+  list.appendChild(row);
+}
+</script>
+</body>
+</html>
